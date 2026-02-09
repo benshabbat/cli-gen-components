@@ -1,0 +1,46 @@
+{
+  "name": "cli-gen-components",
+  "version": "1.0.0",
+  "description": "CLI tool for generating React components (JSX/TSX)",
+  "main": "src/index.js",
+  "bin": {
+    "gen-component": "./src/index.js",
+    "gc": "./src/index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "link": "npm link",
+    "unlink": "npm unlink -g cli-gen-components"
+  },
+  "keywords": [
+    "cli",
+    "react",
+    "component",
+    "generator",
+    "jsx",
+    "tsx",
+    "typescript",
+    "boilerplate",
+    "template",
+    "scaffold"
+  ],
+  "author": "benshabbat",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/benshabbat/cli-gen-components.git"
+  },
+  "bugs": {
+    "url": "https://github.com/benshabbat/cli-gen-components/issues"
+  },
+  "homepage": "https://github.com/benshabbat/cli-gen-components#readme",
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "fs-extra": "^11.3.3"
+  }
+}
