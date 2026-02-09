@@ -6,6 +6,14 @@ const {
   jsxTemplateWithoutStyles,
   tsxTemplate,
   tsxTemplateWithoutStyles,
+  jsxClassTemplate,
+  jsxClassTemplateWithoutStyles,
+  tsxClassTemplate,
+  tsxClassTemplateWithoutStyles,
+  jsxHookTemplate,
+  tsxHookTemplate,
+  jsxContextTemplate,
+  tsxContextTemplate,
   cssTemplate,
   cssModuleTemplate
 } = require('../templates/component-templates');
@@ -15,15 +23,27 @@ const {
  * @param {Object} options - Configuration options
  * @param {string} options.name - Component name
  * @param {string} options.type - Component type (jsx or tsx)
+ * @param {string} options.templateType - Template type (functional, class, hook, context)
  * @param {string} options.path - Output path
  * @param {boolean} options.withStyles - Include CSS file
  */
 function generateComponent(options) {
-  const { name, type, path: outputPath, withStyles } = options;
+  const { name, type, templateType = 'functional', path: outputPath, withStyles } = options;
 
-  // Validate component name
-  if (!name || !/^[A-Z][a-zA-Z0-9]*$/.test(name)) {
-    throw new Error('Component name must start with a capital letter and contain only alphanumeric characters');
+  // Validate based on template type
+  if (templateType === 'hook') {
+    // Hook validation: should start with 'use'
+    if (!name.startsWith('use')) {
+      throw new Error('Hook name must start with "use" (e.g., useMyHook)');
+    }
+    if (!/^use[A-Z][a-zA-Z0-9]*$/.test(name)) {
+      throw new Error('Hook name must follow camelCase after "use" (e.g., useMyHook)');
+    }
+  } else {
+    // Component validation: must start with capital letter
+    if (!name || !/^[A-Z][a-zA-Z0-9]*$/.test(name)) {
+      throw new Error('Component name must start with a capital letter and contain only alphanumeric characters');
+    }
   }
 
   // Create component directory
@@ -32,7 +52,7 @@ function generateComponent(options) {
   try {
     // Check if directory already exists
     if (fs.existsSync(componentDir)) {
-      throw new Error(`Component "${name}" already exists at ${componentDir}`);
+      throw new Error(`"${name}" already exists at ${componentDir}`);
     }
 
     // Create directory
@@ -43,18 +63,15 @@ function generateComponent(options) {
     const fileExtension = type === 'tsx' ? 'tsx' : 'jsx';
     const componentFilePath = path.join(componentDir, `${name}.${fileExtension}`);
     
-    let componentContent;
-    if (type === 'tsx') {
-      componentContent = withStyles ? tsxTemplate(name) : tsxTemplateWithoutStyles(name);
-    } else {
-      componentContent = withStyles ? jsxTemplate(name) : jsxTemplateWithoutStyles(name);
-    }
+    let componentContent = getTemplateContent(name, type, templateType, withStyles);
 
     fs.writeFileSync(componentFilePath, componentContent, 'utf8');
-    console.log(chalk.gray(`📄 Created ${type.toUpperCase()} component: ${name}.${fileExtension}`));
+    
+    const typeLabel = getTypeLabel(templateType);
+    console.log(chalk.gray(`📄 Created ${typeLabel}: ${name}.${fileExtension}`));
 
-    // Generate styles file if requested
-    if (withStyles) {
+    // Generate styles file if requested (not for hooks or contexts)
+    if (withStyles && templateType !== 'hook' && templateType !== 'context') {
       const isCssModule = type === 'tsx';
       const styleFileName = isCssModule ? `${name}.module.css` : `${name}.css`;
       const styleFilePath = path.join(componentDir, styleFileName);
@@ -66,7 +83,15 @@ function generateComponent(options) {
 
     // Generate index file for easy imports
     const indexFilePath = path.join(componentDir, 'index.js');
-    const indexContent = `export { default } from './${name}';\n`;
+    let indexContent;
+    
+    if (templateType === 'context') {
+      // Context exports both provider and hook
+      indexContent = `export { ${name}Provider, use${name} } from './${name}';\n`;
+    } else {
+      indexContent = `export { default } from './${name}';\n`;
+    }
+    
     fs.writeFileSync(indexFilePath, indexContent, 'utf8');
     console.log(chalk.gray(`📄 Created index file: index.js`));
 
@@ -76,6 +101,53 @@ function generateComponent(options) {
       fs.removeSync(componentDir);
     }
     throw error;
+  }
+}
+
+/**
+ * Get the appropriate template content based on options
+ */
+function getTemplateContent(name, type, templateType, withStyles) {
+  const isTsx = type === 'tsx';
+  
+  switch (templateType) {
+    case 'class':
+      if (isTsx) {
+        return withStyles ? tsxClassTemplate(name) : tsxClassTemplateWithoutStyles(name);
+      } else {
+        return withStyles ? jsxClassTemplate(name) : jsxClassTemplateWithoutStyles(name);
+      }
+    
+    case 'hook':
+      return isTsx ? tsxHookTemplate(name) : jsxHookTemplate(name);
+    
+    case 'context':
+      return isTsx ? tsxContextTemplate(name) : jsxContextTemplate(name);
+    
+    case 'functional':
+    default:
+      if (isTsx) {
+        return withStyles ? tsxTemplate(name) : tsxTemplateWithoutStyles(name);
+      } else {
+        return withStyles ? jsxTemplate(name) : jsxTemplateWithoutStyles(name);
+      }
+  }
+}
+
+/**
+ * Get display label for template type
+ */
+function getTypeLabel(templateType) {
+  switch (templateType) {
+    case 'class':
+      return 'class component';
+    case 'hook':
+      return 'custom hook';
+    case 'context':
+      return 'context provider';
+    case 'functional':
+    default:
+      return 'functional component';
   }
 }
 

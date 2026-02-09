@@ -15,7 +15,9 @@ program
   .description('Create a new React component')
   .option('-t, --type <type>', 'Component type: jsx or tsx', 'jsx')
   .option('-p, --path <path>', 'Output path for the component', './src/components')
-  .option('-f, --functional', 'Create functional component (default)', true)
+  .option('-c, --class', 'Create class component instead of functional', false)
+  .option('-k, --hook', 'Create a custom hook', false)
+  .option('-x, --context', 'Create a context provider', false)
   .option('-s, --styles', 'Generate CSS module file', false)
   .action((name, options) => {
     try {
@@ -26,11 +28,22 @@ program
         process.exit(1);
       }
 
+      // Determine template type
+      let templateType = 'functional';
+      if (options.hook) {
+        templateType = 'hook';
+      } else if (options.context) {
+        templateType = 'context';
+      } else if (options.class) {
+        templateType = 'class';
+      }
+
       const outputPath = path.resolve(process.cwd(), options.path);
       
       generateComponent({
         name,
         type: componentType,
+        templateType,
         path: outputPath,
         withStyles: options.styles
       });
@@ -48,9 +61,15 @@ program
   .description('List all available templates')
   .action(() => {
     console.log(chalk.cyan('\n📋 Available Templates:\n'));
-    console.log(chalk.white('  • JSX - Functional Component'));
-    console.log(chalk.white('  • TSX - Functional Component with TypeScript\n'));
-    console.log(chalk.gray('Use: gen-component create <name> -t <jsx|tsx>\n'));
+    console.log(chalk.white('  • Functional Component (JSX/TSX) - default'));
+    console.log(chalk.white('  • Class Component (JSX/TSX) - use --class or -c'));
+    console.log(chalk.white('  • Custom Hook (JSX/TSX) - use --hook or -k'));
+    console.log(chalk.white('  • Context Provider (JSX/TSX) - use --context or -x\n'));
+    console.log(chalk.gray('Examples:'));
+    console.log(chalk.gray('  gen-component create MyComponent -t tsx'));
+    console.log(chalk.gray('  gen-component create MyComponent -c -s'));
+    console.log(chalk.gray('  gen-component create useMyHook -k -t tsx'));
+    console.log(chalk.gray('  gen-component create MyContext -x -t tsx\n'));
   });
 
 program.parse(process.argv);
